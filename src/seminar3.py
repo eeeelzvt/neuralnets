@@ -8,7 +8,7 @@ class Param:
     Captures both parameter value and the gradient
     """
 
-    def __init__(self, value):
+    def init(self, value):
         self.value = value
         self.grad = np.zeros_like(value)
 
@@ -43,7 +43,7 @@ def l2_regularization(W, reg_strength):
 
 
 class ReLULayer:
-    def __init__(self):
+    def init(self):
         self.mask = None
 
     def forward(self, X: np.array) -> np.array:
@@ -54,7 +54,8 @@ class ReLULayer:
         :param X: input data
         :return: Rectified Linear Unit
         """
-        raise Exception("Not implemented!")
+        self.mask = X > 0
+        return self.mask * X
 
     def backward(self, d_out: np.array) -> np.array:
         """
@@ -66,7 +67,7 @@ class ReLULayer:
           with respect to input
         """
         # TODO: Implement backward pass
-        raise Exception("Not implemented!")
+        return self.mask * d_out
 
     def params(self) -> dict:
         # ReLU Doesn't have any parameters
@@ -74,7 +75,7 @@ class ReLULayer:
 
 
 class DenseLayer:
-    def __init__(self, n_input, n_output):
+    def init(self, n_input, n_output):
         self.W = Param(0.001 * np.random.randn(n_input, n_output))
         self.B = Param(0.001 * np.random.randn(1, n_output))
         self.X = None
@@ -82,7 +83,9 @@ class DenseLayer:
     def forward(self, X):
         # TODO: Implement forward pass
         # Your implementation shouldn't have any loops
-        raise Exception("Not implemented!")
+        self.X = X.copy()
+        z = X @ self.W.value + self.B.value
+        return z
 
     def backward(self, d_out):
         """
@@ -99,14 +102,19 @@ class DenseLayer:
         # TODO: Implement backward pass
         # Compute both gradient with respect to input
         # and gradients with respect to W and B
-        # Add gradients of W and B to their `grad` attribute
+        # Add gradients of W and B to their grad attribute
 
         # It should be pretty similar to linear classifier from
         # the previous assignment
         # raise Exception("Not implemented!")
         # print('d_out shape is ', d_out.shape)
         # print('self.W shape is ', self.W.value.shape)
-        raise Exception("Not implemented!")
+        d_result = np.dot(d_out, self.W.value.T)
+        self.W.grad = np.dot(self.X.T, d_out)
+        self.B.grad = np.sum(d_out, axis=0, keepdims=True)
+
+        return d_result
+        # raise Exception("Not implemented!")
 
     def params(self):
         return {'W': self.W, 'B': self.B}
@@ -115,7 +123,7 @@ class DenseLayer:
 class TwoLayerNet:
     """ Neural network with two fully connected layers """
 
-    def __init__(self, n_input, n_output, hidden_layer_size, reg=0):
+    def init(self, n_input, n_output, hidden_layer_size, reg=0):
         """
         Initializes the neural network
         Arguments:
@@ -146,8 +154,9 @@ class TwoLayerNet:
         # Set layer parameters gradient to zeros
         # After that compute loss and gradients
         for layer in self.layers:
+            Z = layer.forward(Z)
             for param in layer.params().values():
-                pass
+                param.grad = np.zeros_like(param.grad)
 
         self.loss, self.d_out = softmax_with_cross_entropy(Z, y)
         return Z
@@ -161,7 +170,9 @@ class TwoLayerNet:
         for layer in reversed(self.layers):
             tmp_d_out = layer.backward(tmp_d_out)
             for param in layer.params().values():
-                pass
+                reg_loss, reg_grad = l2_regularization(param.value, self.reg)
+                self.loss += reg_loss
+                param.grad += reg_grad
 
     def fit(self, X, y, learning_rate=1e-3, num_iters=10000,
             batch_size=4, verbose=True):
@@ -204,9 +215,9 @@ class TwoLayerNet:
         return loss_history
 
 
-if __name__ == '__main__':
+if name == 'main':
     """1 point"""
-    # Train your TwoLayer Net! 
+    # Train your TwoLayer Net!
     # Test accuracy must be > 0.33
     # Save report to output/seminar3
     model = TwoLayerNet()

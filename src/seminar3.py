@@ -215,7 +215,7 @@ class TwoLayerNet:
         return loss_history
 
 
-if name == 'main':
+if __name__ == 'main':
     """1 point"""
     # Train your TwoLayer Net!
     # Test accuracy must be > 0.33

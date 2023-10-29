@@ -8,7 +8,7 @@ class Param:
     Captures both parameter value and the gradient
     """
 
-    def init(self, value):
+    def __init__(self, value):
         self.value = value
         self.grad = np.zeros_like(value)
 
@@ -43,7 +43,7 @@ def l2_regularization(W, reg_strength):
 
 
 class ReLULayer:
-    def init(self):
+    def __init__(self):
         self.mask = None
 
     def forward(self, X: np.array) -> np.array:
@@ -75,7 +75,7 @@ class ReLULayer:
 
 
 class DenseLayer:
-    def init(self, n_input, n_output):
+    def __init__(self, n_input, n_output):
         self.W = Param(0.001 * np.random.randn(n_input, n_output))
         self.B = Param(0.001 * np.random.randn(1, n_output))
         self.X = None
@@ -102,7 +102,7 @@ class DenseLayer:
         # TODO: Implement backward pass
         # Compute both gradient with respect to input
         # and gradients with respect to W and B
-        # Add gradients of W and B to their grad attribute
+        # Add gradients of W and B to their `grad` attribute
 
         # It should be pretty similar to linear classifier from
         # the previous assignment
@@ -123,7 +123,7 @@ class DenseLayer:
 class TwoLayerNet:
     """ Neural network with two fully connected layers """
 
-    def init(self, n_input, n_output, hidden_layer_size, reg=0):
+    def __init__(self, n_input, n_output, hidden_layer_size, reg=0):
         """
         Initializes the neural network
         Arguments:
@@ -215,7 +215,7 @@ class TwoLayerNet:
         return loss_history
 
 
-if name == 'main':
+if __name__ == '__main__':
     """1 point"""
     # Train your TwoLayer Net!
     # Test accuracy must be > 0.33

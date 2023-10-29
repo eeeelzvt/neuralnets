@@ -2,9 +2,10 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from datetime import datetime
 
 from seminar3 import *
-from test_utils import get_preprocessed_data
+from test_utils import get_preprocessed_data, visualize_loss
 
 epsilon = 1e-3
 
@@ -34,7 +35,7 @@ class Optimizer(ABC):
 class SGD(Optimizer):
     def step(self, w, d_w, learning_rate):
         # TODO Update W with d_W
-        pass
+        w -= d_w * learning_rate
 
 
 class Momentum(Optimizer):
@@ -45,14 +46,19 @@ class Momentum(Optimizer):
     def step(self, w, d_w, learning_rate):
         if self.velocity is None:
             self.velocity = np.zeros_like(d_w)
+
+        new_velocity = self.rho * self.velocity + d_w
+        w -= new_velocity * learning_rate
+        self.velocity = new_velocity
         # TODO Update W with d_W and velocity
 
 
 class DropoutLayer(Layer):
     def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
         if train:
-            # TODO zero mask in random X position and scale remains
-            pass
+            self.mask = np.random.random(size=x.shape) > self.p
+            self.scale = 1 / (1 - self.p)
+            return x * self.scale * self.mask
         else:
             return x
 
@@ -102,11 +108,14 @@ class BatchNormLayer(Layer):
     def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
         self.num_examples = x.shape[0]
         if train:
+            self.mean_x = np.mean(x, axis=0, keepdims=True)
+            self.var_x = np.var(x, axis=0, keepdims=True)
             # TODO Compute mean_x and var_x
             self._update_running_variables()
         else:
+            self.mean_x = self.running_mean_x
+            self.var_x = self.running_var_x
             # TODO Copy mean_x and var_x from running variables
-            pass
 
         self.var_x += epsilon
         self.stddev_x = np.sqrt(self.var_x)
@@ -202,9 +211,30 @@ class NeuralNetwork:
                 model_params[f'layer_{i}_{k}'] = v
         return model_params
 
+    def evaluate(self, X, y):
+        """
+        Use the trained weights of this linear classifier to predict labels for
+        data points and evaluate accuracy.
+        Inputs:
+        - X: A numpy array of shape (N, D) containing training data; there are N
+          training samples each of dimension D.
+        Returns:
+        - y_predicted: Predicted labels for the data in X. y_predicted is a 1-dimensional
+          array of length N, and each element is an integer giving the predicted
+          class.
+        """
+        z = self.forward(X)
+        y_predicted = np.argmax(z, axis=1)
+        accuracy = np.mean(y_predicted == y)
+        return accuracy
 
 if __name__ == '__main__':
     """1 point"""
+    n_input, n_output, hidden = 3072, 10, 256
+    learning_rate = 0.001
+    reg = 0.1
+    num_iters = 300
+    batch_size = 32
     (x_train, y_train), (x_test, y_test) = get_preprocessed_data(include_bias=False)
     # Train your neural net!
     n_input, n_output, n_hidden = 3072, 10, 256
@@ -213,3 +243,32 @@ if __name__ == '__main__':
                                 BatchNormLayer(n_hidden),
                                 ReLULayer(),
                                 DenseLayer(n_hidden, n_output)])
+    neural_net.setup_optimizer(Momentum())
+    t0 = datetime.now()
+    loss_history = neural_net.fit(x_train, y_train, learning_rate, num_iters, batch_size)
+    t1 = datetime.now()
+    dt = t1 - t0
+    report = f"""# Training Softmax classifier  
+datetime: {t1.isoformat(' ', 'seconds')}  
+Well done in: {dt.seconds} seconds  
+learning_rate = {learning_rate}  
+reg = {reg}  
+num_iters = {num_iters}  
+batch_size = {batch_size}  
+
+Final loss: {loss_history[-1]}   
+Train accuracy: {neural_net.evaluate(x_train, y_train)}   
+Test accuracy: {neural_net.evaluate(x_test, y_test)}  
+
+<img src="weights.png">  
+<br>
+<img src="loss.png">
+"""
+
+    print(report)
+
+    out_dir = '../output/seminar4'
+    report_path = '../output/seminar4/report.md'
+    with open(report_path, 'w') as f:
+        f.write(report)
+    visualize_loss(loss_history, out_dir)

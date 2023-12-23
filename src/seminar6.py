@@ -23,7 +23,7 @@ YOUR_GIT_USER = 'eeeelzvt'
 def download_data():
     """Pipeline: download and extract data"""
     if not os.path.exists(PATH_TO_DATA_ZIP):
-        print('Downloading data...')
+        print('Downloading data....')
         urlretrieve(DATA_URL, PATH_TO_DATA_ZIP)
     else:
         print('Data is already downloaded!')
@@ -85,7 +85,6 @@ def train():
     """Pipeline: Build, train and save model to models/model_6"""
     # Todo: Copy some code from seminar5 and https://keras.io/examples/vision/image_classification_from_scratch/
     print('Training model')
-
     image_size = (180, 180)
     batch_size = 128
 
